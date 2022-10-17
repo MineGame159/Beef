@@ -985,7 +985,9 @@ namespace BeefLsp {
 			BfResolvePassData passData = parser.CreateResolvePassData(.ShowFileSymbolReferences);
 			defer delete passData;
 
-			ParseSymbolData(symbolData, passData);
+			SymbolData symbol = scope .();
+			ParseSymbolData(symbolData, symbol);
+			symbol.Apply(passData);
 
 			String referencesData = app.compiler.GetSymbolReferences(pass, passData, .. scope .());
 
@@ -1025,9 +1027,8 @@ namespace BeefLsp {
 			return references;
 		}
 
-		private void ParseSymbolData(String data, BfResolvePassData passData) {
-			bool typeDef = false;
-
+		private void ParseSymbolData(String data, SymbolData symbolData)
+		{
 			for (let line in Utils.Lines(data)) {
 				var lineDataItr = line.Split('\t');
 				var dataType = lineDataItr.GetNext().Get();
@@ -1035,34 +1036,29 @@ namespace BeefLsp {
 				switch (dataType) {
 				case "localId":
 					int32 localId = int32.Parse(lineDataItr.GetNext().Get());
-					passData.SetLocalId(localId);
+					symbolData.mLocalId = localId;
 				case "typeRef":
-					passData.SetSymbolReferenceTypeDef(scope .(lineDataItr.GetNext().Get()));
-					typeDef = true;
+					symbolData.mTypeDef.Set(lineDataItr.GetNext().Get());
 				case "fieldRef":
-					passData.SetSymbolReferenceTypeDef(scope .(lineDataItr.GetNext().Get()));
-					passData.SetSymbolReferenceFieldIdx(int32.Parse(lineDataItr.GetNext().Get()));
-					typeDef = true;
+					symbolData.mTypeDef.Set(lineDataItr.GetNext().Get());
+					symbolData.mFieldIdx = int32.Parse(lineDataItr.GetNext().Get());
 				case "methodRef", "ctorRef":
-					passData.SetSymbolReferenceTypeDef(scope .(lineDataItr.GetNext().Get()));
-					passData.SetSymbolReferenceMethodIdx(int32.Parse(lineDataItr.GetNext().Get()));
-					typeDef = true;
+					symbolData.mTypeDef.Set(lineDataItr.GetNext().Get());
+					symbolData.mMethodIdx = int32.Parse(lineDataItr.GetNext().Get());
 				case "invokeMethodRef":
-					if (!typeDef) {
-						passData.SetSymbolReferenceTypeDef(scope .(lineDataItr.GetNext().Get()));
-						passData.SetSymbolReferenceMethodIdx(int32.Parse(lineDataItr.GetNext().Get()));
-						typeDef = true;
+					if (symbolData.mTypeDef.IsEmpty) {
+						symbolData.mTypeDef.Set(lineDataItr.GetNext().Get());
+						symbolData.mMethodIdx = int32.Parse(lineDataItr.GetNext().Get());
 					}
 				case "propertyRef":
-					passData.SetSymbolReferenceTypeDef(scope .(lineDataItr.GetNext().Get()));
-					passData.SetSymbolReferencePropertyIdx(int32.Parse(lineDataItr.GetNext().Get()));
-					typeDef = true;
+					symbolData.mTypeDef.Set(lineDataItr.GetNext().Get());
+					symbolData.mPropertyIdx = int32.Parse(lineDataItr.GetNext().Get());
 				case "typeGenericParam":
-					passData.SetTypeGenericParamIdx(int32.Parse(lineDataItr.GetNext().Get()));
+					symbolData.mTypeGenericParamIdx = int32.Parse(lineDataItr.GetNext().Get());
 				case "methodGenericParam":
-					passData.SetMethodGenericParamIdx(int32.Parse(lineDataItr.GetNext().Get()));
+					symbolData.mMethodGenericParamIdx = int32.Parse(lineDataItr.GetNext().Get());
 				case "namespaceRef":
-					passData.SetSymbolReferenceNamespace(scope .(lineDataItr.GetNext().Get()));
+					symbolData.mNamespace.Set(lineDataItr.GetNext().Get());
 				}
 			}
 		}
@@ -1255,7 +1251,9 @@ namespace BeefLsp {
 			BfResolvePassData passData = parser.CreateResolvePassData(.ShowFileSymbolReferences);
 			defer delete passData;
 
-			ParseSymbolData(symbolData, passData);
+			SymbolData symbol = scope .();
+			ParseSymbolData(symbolData, symbol);
+			symbol.Apply(passData);
 
 			String referencesData = app.compiler.GetSymbolReferences(pass, passData, .. scope .());
 
