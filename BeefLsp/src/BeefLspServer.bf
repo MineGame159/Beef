@@ -549,17 +549,7 @@ namespace BeefLsp {
 				}
 				else if (line.StartsWith("method") || line.StartsWith("mixin")) {
 					StringView doc = line.Substring(line.IndexOf('\x03') + 1);
-
-					int sigI = doc.IndexOf('\x04');
-					if (sigI == -1) {
-						detail = doc;
-					}
-					else {
-						int docI = doc.IndexOf('\x05');
-
-						if (docI == -1) detail = doc[0...sigI - 1];
-						else detail = scope:: String(doc[0...sigI - 1])..Append(doc.Substring(docI));
-					}
+					detail = doc;
 				}
 				else if (line.StartsWith("property") || line.StartsWith("object") || line.StartsWith("value")) {
 					StringView doc = line.Substring(line.IndexOf('\x03') + 1);
@@ -574,12 +564,17 @@ namespace BeefLsp {
 			}
 
 			if (!detail.IsEmpty) {
+				let sigI = detail.IndexOf('\x04');
+				if (sigI != -1) {
+					detail = detail[0..<sigI];
+				}
+
 				// Documentation
 				int docI = detail.IndexOf('\x05');
 
 				if (docI != -1) {
 					String docs = Utils.CleanDocumentation(detail.Substring(docI + 1), .. scope:: .());
-					detail = detail[0...docI - 1];
+					detail = detail[0..<docI];
 
 					Documentation documentation = scope .();
 					documentation.Parse(docs);
