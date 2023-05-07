@@ -71,7 +71,10 @@ class SettingValues {
     }
 
     private getGroup(groups: any[], groupIndex: number): any {
-        const schemaGroup = getStore(schema).groups[groupIndex];
+        const schemaGroup = this.getSchemaGroupFromIndex(groupIndex);
+        if(schemaGroup == null) {
+            return; //This may error, but it is unlikely
+        }
 
         for (let i = 0; i < groups.length; i++) {
             const group = groups[i];
@@ -87,14 +90,28 @@ class SettingValues {
         return group;
     }
 
+    private getSchemaGroupFromIndex(groupIndex : number) : any {
+        var toReturn : Group | null = null;
+        getStore(schema).groups.forEach(element => {
+            if(element.id == groupIndex) {
+                toReturn = element;
+            }
+        });
+        return toReturn;
+    }
+
     public apply() {
         let groups = [];
 
         for (const key in this.newValues) {
+            
             const split = key.split(";");
             const group = this.getGroup(groups, parseInt(split[0]));
-
-            group.settings[split[1]] = this.newValues[key];
+            group.settings[ 
+                (split.length > 2) ? //This does potentially break if we ever create 3 split settings. 
+                    split[1] + ';' + split[2] : 
+                    split[1]
+            ] = this.newValues[key];
         }
 
         const s = getStore(schema);
